@@ -35,6 +35,7 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
   const protocolVersion = parseInt(protocolVersionMaybeArray ?? '0', 10);
 
   const platform = req.headers['expo-platform'] ?? req.query['platform'];
+  console.log({ platform });
   if (platform !== 'ios' && platform !== 'android') {
     res.statusCode = 400;
     res.json({
@@ -44,6 +45,7 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
   }
 
   const runtimeVersion = req.headers['expo-runtime-version'] ?? req.query['runtime-version'];
+  console.log({ runtimeVersion });
   if (!runtimeVersion || typeof runtimeVersion !== 'string') {
     res.statusCode = 400;
     res.json({
@@ -56,6 +58,7 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
   try {
     updateBundlePath = await getLatestUpdateBundlePathForRuntimeVersionAsync(runtimeVersion);
   } catch (error: any) {
+    console.log(error);
     res.statusCode = 404;
     res.json({
       error: error.message,
@@ -64,7 +67,7 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
   }
 
   const updateType = await getTypeOfUpdateAsync(updateBundlePath);
-
+  console.log({ updateType });
   try {
     try {
       if (updateType === UpdateType.NORMAL_UPDATE) {
@@ -80,6 +83,7 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
         await putRollBackInResponseAsync(req, res, updateBundlePath, protocolVersion);
       }
     } catch (maybeNoUpdateAvailableError) {
+      console.log(maybeNoUpdateAvailableError);
       if (maybeNoUpdateAvailableError instanceof NoUpdateAvailableError) {
         await putNoUpdateAvailableInResponseAsync(req, res, protocolVersion);
         return;
@@ -87,10 +91,11 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
       throw maybeNoUpdateAvailableError;
     }
   } catch (error) {
-    console.error(error);
+    console.log(error);
     res.statusCode = 404;
     res.json({ error });
   }
+  console.log('End manifestEndpoint');
 }
 
 enum UpdateType {
@@ -117,9 +122,12 @@ async function putUpdateInResponseAsync(
     runtimeVersion,
   });
 
+  console.log({ currentUpdateId, id, metadataJson, createdAt });
+
   // NoUpdateAvailable directive only supported on protocol version 1
   // for protocol version 0, serve most recent update as normal
   if (currentUpdateId === convertSHA256HashToUUID(id) && protocolVersion === 1) {
+    console.log('NoUpdateAvailableError');
     throw new NoUpdateAvailableError();
   }
 
@@ -204,6 +212,8 @@ async function putUpdateInResponseAsync(
   res.setHeader('content-type', `multipart/mixed; boundary=${form.getBoundary()}`);
   res.write(form.getBuffer());
   res.end();
+
+  console.log('End');
 }
 
 async function putRollBackInResponseAsync(

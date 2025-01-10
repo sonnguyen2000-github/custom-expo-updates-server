@@ -5,10 +5,10 @@ do
     esac
 done
 
-cd ../expo-updates-client
+cd /home/sonnh/Documents/Saymee/my-x-mobile
 npx expo export
-cd ../expo-updates-server
+cd /home/sonnh/Documents/Saymee/custom-expo-updates-server/expo-updates-server
 rm -rf updates/$directory/
-cp -r ../expo-updates-client/dist/ updates/$directory
+cp -r /home/sonnh/Documents/Saymee/my-x-mobile/dist/ updates/$directory
 
 node ./scripts/exportClientExpoConfig.js > updates/$directory/expoConfig.json
